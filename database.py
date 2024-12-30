@@ -1,12 +1,15 @@
 #Database Management Banking
-import mysql.connector as sql
+import mysql.connector 
 
-mydb = sql.connect(
-            host="localhost",
-            user="root",
-            passwd="7877",
-            database="bank"
+
+
+mydb = mysql.connector.connect(
+    host="localhost",  # Closing quote added here
+    user="root",       # Correct order of arguments
+    password="Iamkk0104@",  # Corrected syntax
+    database="bank"  # Add this if a specific database is required
 )
+
 
 cursor = mydb.cursor()
 
@@ -16,17 +19,21 @@ def db_query(str):
     return result
 
 def createcustomertable():
-    cursor.execute('''
-                CREATE TABLE IF NOT EXISTS customers
-                (username VARCHAR(20),
-                password VARCHAR(20),
-                name varchar(20),
-                age INTEGER,
-                city VARCHAR(20),
-                balance INTEGER,
-                account_number INTEGER,
-                status BOOLEAN)
-    ''')
+   cursor.execute('''
+    CREATE TABLE IF NOT EXISTS customers (
+        username VARCHAR(20) NOT NULL,
+        password VARCHAR(20) NOT NULL,
+        name VARCHAR(50),
+        email VARCHAR(50) UNIQUE,
+        age TINYINT UNSIGNED,
+        city VARCHAR(50),
+        balance DECIMAL(10, 2),
+        account_number BIGINT UNSIGNED AUTO_INCREMENT,
+        status BOOLEAN,
+        PRIMARY KEY (account_number)
+    )
+''')
+
 
 mydb.commit()
 
