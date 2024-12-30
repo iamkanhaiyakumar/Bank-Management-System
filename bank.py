@@ -1,90 +1,81 @@
-# Bank Services
-from database import *
-import datetime
+from flask import Flask, render_template, request, redirect, url_for
+import mysql.connector
 
+app = Flask(__name__)
 
-class Bank:
-    def __init__(self, username, account_number):
-        self.__username = username
-        self.__account_number = account_number
+# Establishing connection to the database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="Iamkk0104@",
+    database="bank"
+)
 
-    def create_transaction_table(self):
-        db_query(f"CREATE TABLE IF NOT EXISTS {self.__username}_transaction "
-                 f"( timedate VARCHAR(30),"
-                 f"account_number INTEGER,"
-                 f"remarks VARCHAR(30),"
-                 f"amount INTEGER )")
+cursor = mydb.cursor()
 
-    def balanceequiry(self):
-        temp = db_query(
-            f"SELECT balance FROM customers WHERE username = '{self.__username}';")
-        print(f"{self.__username} Balance is {temp[0][0]}")
+# Function to query the database
+def db_query(query, values=None, is_select=False):
+    cursor.execute(query, values)
+    if is_select:
+        # For SELECT queries, we fetch results
+        result = cursor.fetchall()
+        return result
+    else:
+        # For non-SELECT queries (INSERT/UPDATE/DELETE), we commit changes
+        mydb.commit()
 
-    def deposit(self, amount):
-        temp = db_query(
-            f"SELECT balance FROM customers WHERE username = '{self.__username}';")
-        test = amount + temp[0][0]
-        db_query(
-            f"UPDATE customers SET balance = '{test}' WHERE username = '{self.__username}'; ")
-        self.balanceequiry()
-        db_query(f"INSERT INTO {self.__username}_transaction VALUES ("
-                 f"'{datetime.datetime.now()}',"
-                 f"'{self.__account_number}',"
-                 f"'Amount Deposit',"
-                 f"'{amount}'"
-                 f")")
-        print(f"{self.__username} Amount is Sucessfully Depositted into Your Account {self.__account_number}")
+# Create customer table
+def create_customers_table():
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS customers (
+                    username VARCHAR(20),
+                    password VARCHAR(20),
+                    name VARCHAR(20),
+                    email VARCHAR(50) UNIQUE,
+                    age INTEGER,
+                    contact VARCHAR(15),
+                    address TEXT,
+                    city VARCHAR(20),
+                    balance INTEGER,
+                    account_number INTEGER PRIMARY KEY AUTO_INCREMENT,
+                    status BOOLEAN)
+    ''')
+    mydb.commit()
 
-    def withdraw(self, amount):
-        temp = db_query(
-            f"SELECT balance FROM customers WHERE username = '{self.__username}';")
-        if amount > temp[0][0]:
-            print("Insufficient Balance Please Deposit Money")
-        else:
-            test = temp[0][0] - amount
-            db_query(
-                f"UPDATE customers SET balance = '{test}' WHERE username = '{self.__username}'; ")
-            self.balanceequiry()
-            db_query(f"INSERT INTO {self.__username}_transaction VALUES ("
-                     f"'{datetime.datetime.now()}',"
-                     f"'{self.__account_number}',"
-                     f"'Amount Withdraw',"
-                     f"'{amount}'"
-                     f")")
-            print(
-                f"{self.__username} Amount is Sucessfully Withdraw from Your Account {self.__account_number}")
+create_customers_table()
 
-    def fundtransfer(self, receive, amount):
-        temp = db_query(
-            f"SELECT balance FROM customers WHERE username = '{self.__username}';")
-        if amount > temp[0][0]:
-            print("Insufficient Balance Please Deposit Money")
-        else:
-            temp2 = db_query(
-                f"SELECT balance FROM customers WHERE account_number = '{receive}';")
-            if temp2 == []:
-                print("Account Number Does not Exists")
-            else:
-                test1 = temp[0][0] - amount
-                test2 = amount + temp2[0][0]
-                db_query(
-                    f"UPDATE customers SET balance = '{test1}' WHERE username = '{self.__username}'; ")
-                db_query(
-                    f"UPDATE customers SET balance = '{test2}' WHERE account_number = '{receive}'; ")
-                receiver_username = db_query(
-                    f"SELECT username FROM customers where account_number = '{receive}';")
-                self.balanceequiry()
-                db_query(f"INSERT INTO {receiver_username[0][0]}_transaction VALUES ("
-                         f"'{datetime.datetime.now()}',"
-                         f"'{self.__account_number}',"
-                         f"'Fund Transfer From {self.__account_number}',"
-                         f"'{amount}'"
-                         f")")
-                db_query(f"INSERT INTO {self.__username}_transaction VALUES ("
-                         f"'{datetime.datetime.now()}',"
-                         f"'{self.__account_number}',"
-                         f"'Fund Transfer -> {receive}',"
-                         f"'{amount}'"
-                         f")")
-                print(
-                    f"{self.__username} Amount is Sucessfully Transaction from Your Account {self.__account_number}")
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        # Retrieve data from the form
+        username = request.form['username']
+        password = request.form['password']
+        name = request.form['name']
+        email = request.form['email']
+        age = request.form['age']
+        contact = request.form['contact']
+        address = request.form['address']
+        city = request.form['city']
+        balance = request.form['balance']
+        
+        # Insert the data into the database
+        query = '''INSERT INTO customers (username, password, name, email, age, contact, address, city, balance, status) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
+        values = (username, password, name, email, int(age), contact, address, city, int(balance), True)
+        db_query(query, values)
+        
+        return redirect(url_for('index'))
+    return render_template('register.html')
+
+@app.route('/view_customers')
+def view_customers():
+    query = 'SELECT * FROM customers'
+    customers = db_query(query, is_select=True)  # Fetching results for SELECT query
+    return render_template('view_customers.html', customers=customers)
+
+if __name__ == "__main__":
+    app.run(debug=True)
