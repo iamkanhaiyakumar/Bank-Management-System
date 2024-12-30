@@ -39,7 +39,7 @@ Welcome to the **Bank Management System**, a Python-based command-line applicati
    ```
 2. Clone the repository:
    ```bash
-   git clone https://github.com/mohitprajapat2001/Python-Bank-Project
+   git clone https://github.com/iamkanhaiyakumar/Bank-Management-System
    ```
 3. Navigate to the project directory:
    ```bash
